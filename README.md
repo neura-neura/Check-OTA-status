@@ -47,7 +47,7 @@ Tap the screen to exit.
 ### Visual Indicators
 
 #### OTA Blocking Enabled
-![OTA Blocking Enabled](img\OTA-blocking-enabled.jpg)
+![OTA Blocking Enabled](./img/OTA-blocking-enabled.jpg)
 
 #### OTA Blocking Disabled
-![OTA Blocking Disabled](img\OTA-blocking-disabled.jpg)
+![OTA Blocking Disabled](./img/OTA-blocking-disabled.jpg)
