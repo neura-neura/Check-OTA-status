@@ -3,32 +3,64 @@
 # Author: neura
 # Icon: 
 # Created: jan-08-2025
-# Modified: jan-09-2025
-# Version: 1.1
+# Modified: nov-01-2025
+# Version: 1.3
 # Description: This scriptlet checks the status of OTA (Over-The-Air) update binaries on Kindle devices and informs the user whether updates are enabled or blocked.
 #
 # Changelog:
+#   - nov-01-2025: Added support for firmware <=5.10.x by checking for update.bin.tmp.partial folder.
 #   - jan-09-2025: Added dynamic touch device detection in order to increase the compatibility across devices.
 #   - jan-08-2025: First working version (works on KT4 using event2 device).
 
-# Check the status of OTA binaries
-if [ -f /usr/bin/otaupd.bck ] && [ -f /usr/bin/otav3.bck ]; then
-    MESSAGE1="OTA blocking is enabled."
-    MESSAGE2="Your Kindle will NOT update."
-    MESSAGE3="Your jailbreak is safe."
-    MESSAGE4="Wanna restore OTA? Enable Airplane mode."
+# First, determine firmware version to know which OTA blocking method to check
+FIRMWARE_VERSION=$(cat /etc/prettyversion.txt | grep -o '[0-9]\+\.[0-9]\+' | head -n 1)
+FIRMWARE_MAJOR=$(echo $FIRMWARE_VERSION | cut -d '.' -f 1)
+FIRMWARE_MINOR=$(echo $FIRMWARE_VERSION | cut -d '.' -f 2)
 
-elif [ -f /usr/bin/otaupd ] && [ -f /usr/bin/otav3 ]; then
-    MESSAGE1="OTA blocking is disabled."
-    MESSAGE2="Your Kindle can be updated."
-    MESSAGE3="Your jailbreak is in danger."
-    MESSAGE4="Rename OTA binaries to keep jailbreak."
+# For debug (uncomment if needed)
+# echo "[ DEBUG ] Firmware version: $FIRMWARE_VERSION (Major: $FIRMWARE_MAJOR, Minor: $FIRMWARE_MINOR)"
 
+# Check the appropriate OTA blocking method based on firmware version
+if [ "$FIRMWARE_MAJOR" -eq 5 ] && [ "$FIRMWARE_MINOR" -le 10 ]; then
+    # For firmware <=5.10.x, check for read-only update.bin.tmp.partial folder
+    if [ -d "/mnt/us/update.bin.tmp.partial" ]; then
+        # Check if the folder is read-only
+        if touch "/mnt/us/update.bin.tmp.partial/test" 2>/dev/null; then
+            rm "/mnt/us/update.bin.tmp.partial/test" 2>/dev/null
+            MESSAGE1="OTA blocking is NOT properly enabled."
+            MESSAGE2="Folder exists but is writable."
+            MESSAGE3="Your jailbreak could be at risk."
+            MESSAGE4="Make folder read-only to block updates."
+        else
+            MESSAGE1="OTA blocking is enabled (<=5.10.x method)."
+            MESSAGE2="Read-only folder is blocking updates."
+            MESSAGE3="Your jailbreak is safe."
+            MESSAGE4="Your Kindle will NOT update."
+        fi
+    else
+        MESSAGE1="OTA blocking is disabled (<=5.10.x)."
+        MESSAGE2="Read-only folder is missing."
+        MESSAGE3="Your jailbreak is in danger."
+        MESSAGE4="Create read-only update.bin.tmp.partial folder."
+    fi
 else
-    MESSAGE1="OTA binaries are corrupted."
-    MESSAGE2="Check manually."
-    MESSAGE3=""  # No third message
-    MESSAGE4=""  # No fourth message
+    # For firmware >=5.11.x, check for renamed OTA binaries
+    if [ -f /usr/bin/otaupd.bck ] && [ -f /usr/bin/otav3.bck ]; then
+        MESSAGE1="OTA blocking is enabled (>=5.11.x method)."
+        MESSAGE2="Your Kindle will NOT update."
+        MESSAGE3="Your jailbreak is safe."
+        MESSAGE4="Wanna restore OTA? Enable Airplane mode."
+    elif [ -f /usr/bin/otaupd ] && [ -f /usr/bin/otav3 ]; then
+        MESSAGE1="OTA blocking is disabled (>=5.11.x)."
+        MESSAGE2="Your Kindle can be updated."
+        MESSAGE3="Your jailbreak is in danger."
+        MESSAGE4="Rename OTA binaries to keep jailbreak."
+    else
+        MESSAGE1="OTA binaries are corrupted or missing."
+        MESSAGE2="Check manually."
+        MESSAGE3=""  # No third message
+        MESSAGE4=""  # No fourth message
+    fi
 fi
 
 # Function to force a full screen refresh
@@ -85,13 +117,12 @@ while :; do
         eips 0 3 "$MESSAGE4" > /dev/null 2>&1
     fi
     eips 0 5 "Tap the screen to exit." > /dev/null 2>&1
-
+    
     # Wait for a touch event to occur
     dd if="$TOUCH_DEVICE" bs=16 count=1 2>/dev/null | grep -q .
     if [ $? -eq 0 ]; then
         break
     fi
-
     sleep 1  # Reduce CPU usage
 done
 
