@@ -22,26 +22,17 @@ FIRMWARE_MINOR=$(echo $FIRMWARE_VERSION | cut -d '.' -f 2)
 
 # Check the appropriate OTA blocking method based on firmware version
 if [ "$FIRMWARE_MAJOR" -eq 5 ] && [ "$FIRMWARE_MINOR" -le 10 ]; then
-    # For firmware <=5.10.x, check for read-only update.bin.tmp.partial folder
+    # For firmware <=5.10.x, check for update.bin.tmp.partial folder
     if [ -d "/mnt/us/update.bin.tmp.partial" ]; then
-        # Check if the folder is read-only
-        if touch "/mnt/us/update.bin.tmp.partial/test" 2>/dev/null; then
-            rm "/mnt/us/update.bin.tmp.partial/test" 2>/dev/null
-            MESSAGE1="OTA blocking is NOT properly enabled."
-            MESSAGE2="Folder exists but is writable."
-            MESSAGE3="Your jailbreak could be at risk."
-            MESSAGE4="Make folder read-only to block updates."
-        else
-            MESSAGE1="OTA blocking is enabled (<=5.10.x method)."
-            MESSAGE2="Read-only folder is blocking updates."
-            MESSAGE3="Your jailbreak is safe."
-            MESSAGE4="Your Kindle will NOT update."
-        fi
+        MESSAGE1="OTA blocking is enabled (<=5.10.x method)."
+        MESSAGE2="Folder is blocking updates."
+        MESSAGE3="Your jailbreak is safe."
+        MESSAGE4="Your Kindle will NOT update."
     else
         MESSAGE1="OTA blocking is disabled (<=5.10.x)."
-        MESSAGE2="Read-only folder is missing."
+        MESSAGE2="Folder is missing."
         MESSAGE3="Your jailbreak is in danger."
-        MESSAGE4="Create read-only update.bin.tmp.partial folder."
+        MESSAGE4="Create update.bin.tmp.partial folder."
     fi
 else
     # For firmware >=5.11.x, check for renamed OTA binaries
