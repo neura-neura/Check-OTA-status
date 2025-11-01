@@ -4,7 +4,7 @@
 # Icon: 
 # Created: jan-08-2025
 # Modified: nov-01-2025
-# Version: 1.3
+# Version: 1.2
 # Description: This scriptlet checks the status of OTA (Over-The-Air) update binaries on Kindle devices and informs the user whether updates are enabled or blocked.
 #
 # Changelog:
